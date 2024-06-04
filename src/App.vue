@@ -14,7 +14,7 @@
           :next-change-page="nextChangePage"
       ></my-pagination>
     </div>
-    <cards-list :cards="cards" v-if="!isCardsLoading"/>
+    <cards-list :episodes="allEpisodes" :cards="cards" v-if="!isCardsLoading"/>
     <div v-else> Идет загрузка...</div>
   </div>
 </template>
@@ -23,7 +23,7 @@
 import {defineComponent, ref} from 'vue';
 import CardsList from '@/components/CardsList.vue';
 import {instance} from '@/api/cards-api';
-import {CardsResultsType, InfoType, ResponseType} from '@/api/types';
+import {AllEpisodesType, CardsResultsType, InfoType, ResponseType} from '@/api/types';
 import MySelect from '@/components/MySelect.vue';
 import MyInput from '@/components/MyInput.vue';
 import MyPagination from '@/components/PaginationComponent.vue';
@@ -34,9 +34,10 @@ interface FetchCardsProps {
   page?: number;
 }
 
+
 export default defineComponent({
   name: 'App',
-  components: { MyPagination, MySelect, CardsList, MyInput },
+  components: {MyPagination, MySelect, CardsList, MyInput},
   setup() {
     const cards = ref<CardsResultsType[]>([]);
     const selectedSort = ref('');
@@ -45,6 +46,9 @@ export default defineComponent({
     const totalPage = ref(0);
     const info = ref<InfoType>({} as InfoType);
     const isCardsLoading = ref(false);
+    const episodesId = ref([] as string[])
+    const allEpisodes = ref([] as AllEpisodesType[])
+
 
     const fetchCards = async (props: FetchCardsProps = {}) => {
       try {
@@ -57,36 +61,60 @@ export default defineComponent({
           }
         });
         totalPage.value = characters.data.info.pages;
-        cards.value = characters.data.results;
+        cards.value = [...characters.data.results];
         info.value = characters.data.info;
+        await getIdFromUrl()
       } catch (e) {
-        alert('some error');
+        console.log('some error');
       } finally {
         isCardsLoading.value = false;
       }
     };
+    const getIdFromUrl = async () => {
+      const uniqueId = new Set<string>()
+      cards.value.forEach(el => {
+        const index = el.episode[0].lastIndexOf('/')
+        if (index != -1) {
+          const id = el.episode[0].substring(index + 1)
+          uniqueId.add(id)
+        }
+      })
+      episodesId.value = [...uniqueId]
+      try {
+        const episodes = await instance.get(`/episode/${episodesId.value}`)
+        if (!episodes.data.length) {
+          allEpisodes.value.push(episodes.data)
+        } else {
+          allEpisodes.value = episodes.data
+        }
+
+      } catch (e) {
+        console.log(e)
+      }
+
+    }
 
     const sendFilteredCards = () => {
       page.value = 1;
-      fetchCards({ status: selectedSort.value, name: filteredName.value, page: page.value });
+      fetchCards({status: selectedSort.value, name: filteredName.value, page: page.value});
     };
 
     const changePage = (currentPage: number) => {
       page.value = currentPage;
-      fetchCards({ status: selectedSort.value, name: filteredName.value, page: currentPage });
+      fetchCards({status: selectedSort.value, name: filteredName.value, page: currentPage});
     };
 
     const prevChangePage = () => {
       if (page.value > 1) {
         page.value -= 1;
-        fetchCards({ status: selectedSort.value, name: filteredName.value, page: page.value });
+        fetchCards({status: selectedSort.value, name: filteredName.value, page: page.value});
       }
     };
 
     const nextChangePage = () => {
       if (page.value < totalPage.value) {
         page.value += 1;
-        fetchCards({ status: selectedSort.value, name: filteredName.value, page: page.value });
+        fetchCards({status: selectedSort.value, name: filteredName.value, page: page.value});
       }
     };
 
@@ -99,10 +127,11 @@ export default defineComponent({
       page,
       totalPage,
       isCardsLoading,
+      allEpisodes,
       sendFilteredCards,
       changePage,
       prevChangePage,
-      nextChangePage
+      nextChangePage,
     };
   }
 });

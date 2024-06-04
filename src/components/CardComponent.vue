@@ -16,21 +16,24 @@
       </div>
       <div>
         <div class="title">First seen in:</div>
-        <div class="location">{{ firstSeen }}</div>
+        <div class="location">{{ currentEpisode }}</div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed } from 'vue';
-import { CardsResultsType } from '@/api/types';
+import {defineComponent, PropType, computed} from 'vue';
+import {AllEpisodesType, CardsResultsType} from '@/api/types';
 
 export default defineComponent({
   props: {
     card: {
       type: Object as PropType<CardsResultsType>,
       required: true
+    },
+    episodes: {
+      type: Array as PropType<AllEpisodesType[]>
     }
   },
   setup(props) {
@@ -45,8 +48,23 @@ export default defineComponent({
           return 'gray';
       }
     });
+    const currentEpisode = computed(() => {
+      let episodeName = ''
+      let id = ''
+        props.episodes?.forEach(el => {
+          const index = props.card.episode[0].lastIndexOf('/')
+          if (index != -1) {
+            id = props.card.episode[0].substring(index + 1)
+          }
+          if (+id === el.id) {
+            episodeName = el.name
+          }
+        })
+        return episodeName
 
-    return { firstSeen, circleColor };
+    })
+
+    return {firstSeen, circleColor, currentEpisode};
   }
 });
 </script>

@@ -4,14 +4,15 @@
         v-for="card in cards"
         :key="card.id"
         :card="card"
+        :episodes="episodes"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
+import {defineComponent, PropType} from 'vue';
 import CardComponent from './CardComponent.vue';
-import { CardsResultsType } from '@/api/types';
+import {AllEpisodesType, CardsResultsType} from '@/api/types';
 
 export default defineComponent({
   components: { CardComponent },
@@ -19,8 +20,11 @@ export default defineComponent({
     cards: {
       type: Array as PropType<CardsResultsType[]>,
       required: true
+    },
+    episodes:{
+      type:Array as PropType<AllEpisodesType[]>
     }
-  }
+  },
 });
 </script>
 
